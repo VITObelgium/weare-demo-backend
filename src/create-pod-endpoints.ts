@@ -37,7 +37,7 @@ export function createPodEndpoints(app: Express) {
             if (!relativeResourceUrl) {
                 next(
                     new HttpError(
-                        `To read a resource from the user's Pod we require the query param [podRelativeUrl] to tell us the relative path to read the resource from, but we received no value.`,
+                        `To read a resource from the user's Pod we require the query param [relativeResourceUrl] to tell us the relative path to read the resource from, but we received no value.`,
                         400
                     )
                 );
@@ -95,7 +95,7 @@ export function createPodEndpoints(app: Express) {
         if (!relativeResourceUrl) {
             next(
                 new HttpError(
-                    `To read a resource from the user's Pod we require the query param [podRelativeUrl] to tell us the relative path to read the resource from, but we received no value.`,
+                    `To write a resource to the user's Pod we require the query param [relativeResourceUrl] to tell us the relative path to write the resource to, but we received no value.`,
                     400
                 )
             );
