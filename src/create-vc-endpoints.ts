@@ -16,7 +16,7 @@ export default function createVcEndpoints(app: Express) {
   app.get("/access-request", async (req, res, next) => {
     try {
       log.debug("Calling access-request");
-      const { redirectUrl, podRelativeUrl, questionnaireIri } = req.query;
+      const { redirectUrl, podRelativeUrl } = req.query;
 
       if (redirectUrl !== undefined && redirectUrl !== "" && podRelativeUrl !== undefined && podRelativeUrl !== "") {
         if(!req.session) {
@@ -47,22 +47,7 @@ export default function createVcEndpoints(app: Express) {
           return;
         }
 
-        if (!questionnaireIri) {
-          const message = `To read a resource from the user's Pod we require the query param [questionnaireIri] to tell us the questionnaire to use, but we received no value.`;
-          log.error(message);
-          res.status(400).send(message);
-          return;
-        }
-
-        const questionnaireStore = new GenericStore();
-        await questionnaireStore.initialize(
-          [
-            (questionnaireIri as string).replace("localhost", "host.docker.internal"), // In a Docker container we need to query host.docker.internal and not localhost to reach the host service.
-          ],
-          process.env.WEARE_SERVICES_BACKEND_API_KEY!
-        );
-
-        let purpose = questionnaireStore.getNamedNodeIri(questionnaireIri as string, "dpv:RequestedServiceProvision");
+        const purpose =  "https://utils.prem-acc.vito.be/data/vocab/vpp/sharing/vpp-sharing-purpose#_VikzSharingPurpose"; // TODO
         
         const myPods = await getPodUrlAll(webId!);
         const dataIri = `${myPods![0]}${podRelativeUrl.toString()}`;
