@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 import { createSessionEndpoints } from "./create-session-endpoints";
+import createVcEndpoints from "./create-vc-endpoints";
 import cookieSession from "cookie-session";
 import * as dotEnv from "dotenv";
 import { errorHandler, initPrefixes } from '@weare/weare-libs';
@@ -44,6 +45,7 @@ app.use('health-check', (req: Request, res: Response): void => {
 
 createSessionEndpoints(app);
 createPodEndpoints(app);
+createVcEndpoints(app);
 // Use ErrorHandler just before app.listen, should be the last middleware
 app.use(errorHandler);
 
