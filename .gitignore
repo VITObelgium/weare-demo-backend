@@ -1,2 +1,39 @@
-build/
+# Compiled output
+dist/
+
+# Node dependencies
 node_modules/
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.iml
+.vscode/
+.history/*
+
+# System files
+*~
+.DS_Store
+Thumbs.db
+$RECYCLE.BIN/
+UserInterfaceState.xcuserstate
+
+# Log files
+*.log
+log.txt
+npm-debug.log*
+
+# Test reports
+/coverage
+
+# Local environment
+/.env
+private/**
+
+/logs

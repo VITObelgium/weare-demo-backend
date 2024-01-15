@@ -1,6 +1,7 @@
 import {getSessionFromStorage, Session as SolidSession} from "@inrupt/solid-client-authn-node";
 import {Express} from "express";
-import {NestedRedirectUrl} from "@weare/weare-libs";
+import axios from "axios";
+import log from "loglevel";
 
 export const CONFIG_QUERY_PARAM_OIDC_ISSUER_URL = "idp";
 export const CONFIG_BACKEND_TO_CHOOSE_OIDC_ISSUER = "BackendToChooseOidcIssuer";
@@ -67,6 +68,38 @@ export function createSessionEndpoints(app: Express) {
             }
         } catch (error) {
             // A general error catcher which will, in turn, call the ExpressJS error handler.
+            next(error);
+        }
+    });
+
+    app.get("/access-token", async (req, res, next) => {
+        console.debug("Endpoint '/access-token' called...");
+        try {
+            try {
+                const options = {
+                  method: "POST",
+                  url: process.env.WEARE_IDP_BACKEND,
+                  headers: {
+                    "content-type": "application/x-www-form-urlencoded",
+                  },
+                  data: {
+                    grant_type: 'client_credentials',
+                    client_id: process.env.WEARE_DEMO_BACKEND_CLIENT_ID,
+                    client_secret: process.env.WEARE_DEMO_BACKEND_CLIENT_SECRET,
+                  },
+                };
+                const response = await axios.request(options);
+                // res.sendStatus(201);
+                res.send(response.data!);
+                return;
+              } catch (err) {
+                const message = `Failed to POST to [${process.env.WEARE_IDP_BACKEND}]. Error: ${err}`;
+                log.error(message);
+                res.status(500).send(`<p>Internal Server Error: ${message}</p>`);
+              }
+        } catch (error) {
+            // A general error catcher which will, in turn, call the ExpressJS error handler.
+            console.log(error);
             next(error);
         }
     });
