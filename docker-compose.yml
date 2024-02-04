@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  weare-demo-backend-node:
+    image: sas-vito-docker-local.repo.vito.be/node:16.17-dev
+    restart: unless-stopped
+    command: "node --require ts-node/register --inspect=0.0.0.0:9236 src/app.ts"
+#    command: "node dist/app.js"
+#    command: "tail -f /dev/null"
+    ports:
+      - "${PORT}:${PORT}"
+      - "${DEBUG_PORT}:${DEBUG_PORT}"
+    volumes:
+      - ./:/usr/src/app
+      # Uncomment this when you want to link your weare-libs source code to this project.
+      # You need the We Are All Back Ends project for this to work.
+      #- ../weare-libs:/usr/src/weare-libs
+    environment:
+      ARTIFACTORY_ACCESS_TOKEN: $ARTIFACTORY_ACCESS_TOKEN # This needs to be here for npm to be able to use them

@@ -22,12 +22,12 @@ export async function createVCFetch(requestInfo: RequestInfo | URL, requestInit?
     "Authorization",
     `Bearer ${accessTokenInfo.access_token}`
   );
-  const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
-  console.log("###########################DOPOPOPOPOP#############################################")
-  console.log(dpopProof);
-  console.log("##############################")
+  // const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
+  // console.log("###########################DOPOPOPOPOP#############################################")
+  // console.log(dpopProof);
+  // console.log("##############################")
 
-  vcRequestInit.headers.append("DPoP", dpopProof);
+  // vcRequestInit.headers.append("DPoP", dpopProof);
 
   return crossFetch(requestInfo, vcRequestInit);
 }
