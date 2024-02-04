@@ -1,9 +1,15 @@
-import {getSessionFromStorage, Session as SolidSession} from "@inrupt/solid-client-authn-node";
-import {Express} from "express";
-import {NestedRedirectUrl} from "@weare/weare-libs";
+import { getSessionFromStorage, Session as SolidSession } from "@inrupt/solid-client-authn-node";
+import { Express } from "express";
+import axios from 'axios';
+import { getPodUrlAll } from "@inrupt/solid-client";
+import { createDPoPProof, initializeDPoP } from "./operator/create-dpop";
+import { requestAccessToken } from "./operator/create-access-token";
+import { createVCFetch } from "./operator/create-fetch";
+import {
+    issueAccessRequest as issueAccessRequestInrupt,
+} from "@inrupt/solid-client-access-grants";
 
-export const CONFIG_QUERY_PARAM_OIDC_ISSUER_URL = "idp";
-export const CONFIG_BACKEND_TO_CHOOSE_OIDC_ISSUER = "BackendToChooseOidcIssuer";
+
 
 function getRedirectUrlByQueryParameterOrDefault(
     loginSuccessful: boolean = true
@@ -18,7 +24,22 @@ function getRedirectUrlByQueryParameterOrDefault(
     return redirectUrlAfterLogin;
 }
 
+
 export function createSessionEndpoints(app: Express) {
+
+    initializeDPoP();
+
+    app.get("/auth-backend", async (req, res, next) => {
+        try {
+            const accessTokenInfo = await requestAccessToken();
+            console.log('Token Response:', accessTokenInfo);
+            res.send(accessTokenInfo)
+
+        } catch (error) {
+            console.error('Error obtaining token:', (error as any).response ? (error as any).response.data : (error as any).message);
+            next(error);
+        }
+    });
 
     app.get("/login", async (req, res, next) => {
         try {
@@ -45,17 +66,60 @@ export function createSessionEndpoints(app: Express) {
 
     app.get("/oidc-redirect", async (req, res, next) => {
         try {
+
             const session = await getSessionFromStorage(req.session!.solidSessionId);
+            console.log('################SESSION########################')
+            console.log(session);
+            console.log('################END SESSION########################')
+
             const fullUrl = `${process.env.PROTOCOL}://${req.get("host")}${req.originalUrl}`;
 
+            console.log(fullUrl);
+
             await session!.handleIncomingRedirect(fullUrl);
+            console.log("LOGGED IN");
+            console.log(session!.info.isLoggedIn)
 
             if (session!.info.isLoggedIn) {
                 let redirectUrl;
+                let accessRequest;
                 try {
                     redirectUrl = getRedirectUrlByQueryParameterOrDefault(
                         true
                     );
+
+                    //CREATE ACCESS REQUEST
+                    console.log("Creating access request for WE ARE DEMO BACKEND")
+                    const webId = session!.info.webId;
+                    const podRelativeUrl = "/weare/demo-backend/";
+                    const purpose = "https://utils.prem-acc.vito.be/data/vocab/vpp/sharing/vpp-sharing-purpose#_VikzSharingPurpose"; // TODO
+
+                    const myPods = await getPodUrlAll(webId!);
+                    const dataIri = `${myPods![0]}${podRelativeUrl.toString()}`;
+
+                    const accessExpiration = new Date(Date.now());
+                    accessExpiration.setHours(23, 59, 59);
+
+                    accessRequest = await issueAccessRequestInrupt(
+                        {
+                            access: { read: true, write: true, append: true },
+                            purpose: [purpose],
+                            resourceOwner: webId!,
+                            resources: [dataIri],
+                            expirationDate: accessExpiration,
+                        },
+                        {
+                            accessEndpoint: process.env.ACCESS_REQUEST_ENDPOINT!,
+                            fetch: createVCFetch,
+                        }
+                    );
+                    console.log("######################################################################")
+                    console.log(accessRequest);
+                    console.log("######################################################################")
+
+                    //We have an access request, now direct to approver with redirectURL = redirectUrl
+                    //redirectUrl=
+
                 } catch (error) {
                     next(error);
                     return;

@@ -96,4 +96,5 @@ export default function createVcEndpoints(app: Express) {
       next(error);
     }
   });
+
 }
