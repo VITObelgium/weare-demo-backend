@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  weare-demo-backend-node:
+  node:
     image: sas-vito-docker-local.repo.vito.be/node:16.17-dev
     restart: unless-stopped
     command: "node --require ts-node/register --inspect=0.0.0.0:9236 src/app.ts"
