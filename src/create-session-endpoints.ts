@@ -81,21 +81,20 @@ export function createSessionEndpoints(app: Express) {
             console.log(session!.info.isLoggedIn)
 
             if (session!.info.isLoggedIn) {
-                let redirectUrl;
+                let frontEndRedirectUrl;
                 let accessRequest;
                 try {
-                    redirectUrl = getRedirectUrlByQueryParameterOrDefault(
+                    frontEndRedirectUrl = getRedirectUrlByQueryParameterOrDefault(
                         true
                     );
 
                     //CREATE ACCESS REQUEST
                     console.log("Creating access request for WE ARE DEMO BACKEND")
                     const webId = session!.info.webId;
-                    const podRelativeUrl = "/weare/demo-backend/";
-                    const purpose = "https://utils.prem-acc.vito.be/data/vocab/vpp/sharing/vpp-sharing-purpose#_VikzSharingPurpose"; // TODO
-
+                    const podRelativeUrl = process.env.APP_POD_LOCATION;
+                    const purpose = process.env.SHARING_PURPOSE;
                     const myPods = await getPodUrlAll(webId!);
-                    const dataIri = `${myPods![0]}${podRelativeUrl.toString()}`;
+                    const dataIri = `${myPods![0]}${podRelativeUrl!.toString()}`;
 
                     const accessExpiration = new Date(Date.now());
                     accessExpiration.setHours(23, 59, 59);
@@ -103,7 +102,7 @@ export function createSessionEndpoints(app: Express) {
                     accessRequest = await issueAccessRequestInrupt(
                         {
                             access: { read: true, write: true, append: true },
-                            purpose: [purpose],
+                            purpose: [purpose!],
                             resourceOwner: webId!,
                             resources: [dataIri],
                             expirationDate: accessExpiration,
@@ -117,17 +116,17 @@ export function createSessionEndpoints(app: Express) {
                     console.log(accessRequest);
                     console.log("######################################################################")
 
-                    //We have an access request, now direct to approver with redirectURL = redirectUrl
-                    //redirectUrl=
-
+                    let redirectUrl = process.env.ACCESS_GRANT_APPROVER_SERVER!;
+                    redirectUrl += `${process.env.ACCESS_GRANT_APPROVER_ENDPOINT}?requestVcUrl=${encodeURI(
+                      accessRequest.id
+                    )}&redirectUrl=${encodeURI(frontEndRedirectUrl)}`;
+                    res.location(redirectUrl);
+                    res.sendStatus(302);
+                    return;
                 } catch (error) {
                     next(error);
                     return;
                 }
-                res
-                    .status(302)
-                    .location(redirectUrl);
-                res.end();
             }
         } catch (error) {
             // A general error catcher which will, in turn, call the ExpressJS error handler.

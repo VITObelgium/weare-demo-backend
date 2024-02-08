@@ -1,11 +1,6 @@
 import { createDPoPProof } from "./create-dpop";
 import axios from 'axios';
 
-export let ACCESS_TOKEN = "";
-export const CONFIG_QUERY_PARAM_OIDC_ISSUER_URL = "idp";
-export const CONFIG_BACKEND_TO_CHOOSE_OIDC_ISSUER = "BackendToChooseOidcIssuer";
-
-
 export async function requestAccessToken(): Promise<any> {
     console.log("Fetching Access Token");
     try {
@@ -14,7 +9,7 @@ export async function requestAccessToken(): Promise<any> {
         const dpopProof = await createDPoPProof('POST', tokenEndpoint, null);
 
         const headers = {
-            Authorization: `DPoP ${dpopProof}`,
+            'DPoP': `${dpopProof}`,
             'Content-Type': 'application/x-www-form-urlencoded',
         };
 

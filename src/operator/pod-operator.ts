@@ -3,38 +3,85 @@ import {Store as N3Store} from "n3";
 import log from "loglevel";
 import {
     deleteFile,
-    deleteSolidDataset,
     fromRdfJsDataset, getSolidDataset, overwriteFile,
-    saveFileInContainer,
-    saveSolidDatasetAt, toRdfJsDataset
+    saveFileInContainer, toRdfJsDataset
 } from "@inrupt/solid-client";
+import {getVerifiableCredentialAllFromShape} from "@inrupt/solid-client-vc";
+import { AccessGrant, deleteSolidDataset, saveSolidDatasetAt } from "@inrupt/solid-client-access-grants";
+import { createVCFetch, createVCFetchDPoP } from "./create-fetch";
 
-export async function writeTriples(session: SolidSession, resourceUrl: URL, n3Store: N3Store, options?: {prefixes?: {}}): Promise<null | Error> {
+
+export async function writeTriplesWithAG(session: SolidSession, resourceUrl: URL, n3Store: N3Store, options?: {prefixes?: {}}): Promise<null | Error> {
     const resourceUrlStr = resourceUrl.toString();
     const solidDataset = fromRdfJsDataset(n3Store);
 
-    return new Promise((resolve, reject) => {
-        log.debug(`First, we attempting to remove old resource (ignoring errors in case it doesn't exist yet!)...`);
-        deleteSolidDataset(resourceUrlStr, {fetch: session.fetch}).then(() => {
-            const prefixes = {
-            ...globalThis.prefixes,
-            ...options?.prefixes,
-                    thisParent: resourceUrlStr.substring(0, resourceUrlStr.lastIndexOf("/") + 1),
-                    this: `${resourceUrlStr}#`
-            };
-            saveSolidDatasetAt(resourceUrlStr, solidDataset, {
-                fetch: session.fetch,
-                prefixes
-            }).then((response) => {
-                resolve(null);
+    console.log("####################ACCESS GRANT START ############")
+    // Get Valid Access Grants
+    const vcShape = {
+        type: ["SolidAccessGrant"],
+        credentialSubject: {
+            providedConsent: {
+                hasStatus: "https://w3id.org/GConsent#ConsentStatusExplicitlyGiven",
+            }
+        },
+    } as any; /* Validation fails for Partial<VerifiableCredential>, use any instead */
+    vcShape.credentialSubject.id = session.info.webId;
+
+    const accessGrants = (await getVerifiableCredentialAllFromShape(process.env.VC_DERIVE_ENDPOINT!, vcShape, {
+        fetch: createVCFetch.bind(options),
+    })) as AccessGrant[]; /* After filtering out the access grants we should be able to cast them here */
+  
+    if(accessGrants) {
+        accessGrants.sort((a, b) => {
+            // Handle cases where expirationDate might be undefined
+            const dateA = a.expirationDate ? new Date(a.expirationDate) : new Date(0);
+            const dateB = b.expirationDate ? new Date(b.expirationDate) : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
+    
+        const usableAccessGrant = accessGrants[accessGrants.length - 1];
+        console.log("USABLE ACCESS GRANT #########################")
+        console.log(usableAccessGrant)
+        console.log("USABLE ACCESS GRANT #########################")
+
+        return new Promise((resolve, reject) => {
+            log.debug(`First, we attempting to remove old resource (ignoring errors in case it doesn't exist yet!)...`);
+            deleteSolidDataset(resourceUrlStr, usableAccessGrant, {fetch: createVCFetch}).then(() => {
+                saveSolidDatasetAt(resourceUrlStr, solidDataset, usableAccessGrant, {
+                    fetch: createVCFetch
+                }).then((response) => {
+                    resolve(null);
+                }).catch((error) => {
+                    reject(error);
+                });
             }).catch((error) => {
                 reject(error);
             });
-        }).catch((error) => {
-            reject(error);
         });
-    });
+    }
+    return Error("No access grant found!");
+    
 };
+
+export async function fetchAccessGrants(ownerWebId?: string): Promise<AccessGrant[]> {
+
+    const vcShape = {
+        type: ["SolidAccessGrant"],
+        credentialSubject: {
+            providedConsent: {
+                hasStatus: "https://w3id.org/GConsent#ConsentStatusExplicitlyGiven",
+            }
+        },
+    } as any; /* Validation fails for Partial<VerifiableCredential>, use any instead */
+
+    if (ownerWebId) vcShape.credentialSubject.id = ownerWebId;
+
+
+    const accessGrants = (await getVerifiableCredentialAllFromShape(process.env.VC_DERIVE_ENDPOINT!, vcShape, {
+        fetch: createVCFetch,
+    })) as AccessGrant[]; /* After filtering out the access grants we should be able to cast them here */
+    return accessGrants;
+}
 
 export async function getTriples(session: SolidSession, resourceUrl: URL): Promise<N3Store> {
     const resourceUrlStr = resourceUrl.toString();

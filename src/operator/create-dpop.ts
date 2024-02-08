@@ -1,6 +1,8 @@
 import { createHash, generateKeyPairSync } from "crypto";
 import jwt from 'jsonwebtoken';
+
 import * as pemJwk from 'pem-jwk';
+import { v4 } from "uuid";
 
 export let DPOP_KEY = {
     privateKey: 'your-private-key',
@@ -42,7 +44,7 @@ export async function initializeDPoP () {
 
 export async function createDPoPProof (httpMethod: string, url: string, body: string | null): Promise<string> {
     const header = {
-        alg: 'RS256',
+        alg: 'RS512',
         jwk: {
             ...DPOP_KEY.publicKey,
             use: 'sig',
@@ -53,11 +55,11 @@ export async function createDPoPProof (httpMethod: string, url: string, body: st
     const payload = {
         htu: url,
         htm: httpMethod,
-        jti: createHash('sha256').update(`${url}${httpMethod}${body}`).digest('hex'),
+        jti: v4(),
     };
 
     // Use the private key for signing
-    return jwt.sign(payload, DPOP_KEY.privateKey, { header });
+    return jwt.sign(payload, DPOP_KEY.privateKey, { header : header });
 }
 
 /*

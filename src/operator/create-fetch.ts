@@ -15,22 +15,43 @@ export async function createVCFetch(requestInfo: RequestInfo | URL, requestInit?
 
 
   const accessTokenInfo = await requestAccessToken();
-  console.log("############ACCES TOKEN#################")
-  console.log(accessTokenInfo);
-  console.log("##############################")
+
   vcRequestInit.headers.append(
     "Authorization",
     `Bearer ${accessTokenInfo.access_token}`
   );
-  // const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
-  // console.log("###########################DOPOPOPOPOP#############################################")
-  // console.log(dpopProof);
-  // console.log("##############################")
+  /*const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
 
-  // vcRequestInit.headers.append("DPoP", dpopProof);
+  vcRequestInit.headers.append("DPoP", dpopProof);
+  console.log("###########################COMPLETE HEADER#############################################")
+  console.log(vcRequestInit.headers)
+  console.log("###########################DOPOPOPOPOP#############################################")
+*/
+  return crossFetch(requestInfo, vcRequestInit);
+}
+
+export async function createVCFetchDPoP(requestInfo: RequestInfo | URL, requestInit?: RequestInit): Promise<Response> {
+  const vcRequestInit = requestInit || {};
+  vcRequestInit.method = vcRequestInit.method || "GET"; // Fallback to HTTP GET, needed for DPoP
+  vcRequestInit.headers = new CrossHeaders(vcRequestInit.headers || {});
+
+
+  const accessTokenInfo = await requestAccessToken();
+
+  vcRequestInit.headers.append(
+    "Authorization",
+    `DPoP ${accessTokenInfo.access_token}`
+  );
+  const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
+
+  vcRequestInit.headers.append("DPoP", dpopProof);
+  console.log("###########################COMPLETE HEADER#############################################")
+  console.log(vcRequestInit.headers)
+  console.log("###########################DOPOPOPOPOP#############################################")
 
   return crossFetch(requestInfo, vcRequestInit);
 }
+
 
 
 /*

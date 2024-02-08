@@ -7,7 +7,7 @@ import {
 } from "@inrupt/solid-client";
 import { fetchAuthenticatedSession, fetchPods, HttpError, serializeDatasetAsTurtle } from "@weare/weare-libs";
 import {Parser, Store as N3Store} from "n3";
-import { writeTriples } from "./operator/pod-operator";
+import { writeTriplesWithAG } from "./operator/pod-operator";
 export function createPodEndpoints(app: Express) {
 
     app.get("/pods", async (req, res, next) => {
@@ -111,6 +111,7 @@ export function createPodEndpoints(app: Express) {
                 )
             );
         }
+
         const session = await getSessionFromStorage(req.session!.solidSessionId);
         if(!session) {
             console.log("No Solid Session found")
@@ -138,7 +139,7 @@ export function createPodEndpoints(app: Express) {
             `Overwriting resource relative to the first Pod (of [${myPods?.length}]) we found in user's WebID Profile Document: [${userPodResourceUrl}].`
         );
 
-        writeTriples(session!, new URL(userPodResourceUrl), dataset).then((result) => {
+        writeTriplesWithAG(session!, new URL(userPodResourceUrl), dataset).then((result) => {
             const messageAsJson = `{ "response": "SUCCESSFULLY wrote resource to [${userPodResourceUrl}] (that we parsed and found [${
                 dataset.size
             }] triples) using the first registered Pod we found [${
@@ -152,6 +153,9 @@ export function createPodEndpoints(app: Express) {
             httpError.stack = error.stack;
             next(httpError);
         });
+
+
+
     });
 
 
