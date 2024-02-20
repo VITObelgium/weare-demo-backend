@@ -20,13 +20,22 @@ export async function createVCFetch(requestInfo: RequestInfo | URL, requestInit?
     "Authorization",
     `Bearer ${accessTokenInfo.access_token}`
   );
-  /*const dpopProof = await createDPoPProof(requestInfo.toString(), vcRequestInit.method, null);
+  return crossFetch(requestInfo, vcRequestInit);
+}
 
-  vcRequestInit.headers.append("DPoP", dpopProof);
-  console.log("###########################COMPLETE HEADER#############################################")
-  console.log(vcRequestInit.headers)
-  console.log("###########################DOPOPOPOPOP#############################################")
-*/
+export async function createVCFetchIdToken(requestInfo: RequestInfo | URL, requestInit?: RequestInit): Promise<Response> {
+  const vcRequestInit = requestInit || {};
+  vcRequestInit.method = vcRequestInit.method || "GET"; // Fallback to HTTP GET, needed for DPoP
+  vcRequestInit.headers = new CrossHeaders(vcRequestInit.headers || {});
+
+  const accessTokenInfo = await requestAccessToken();
+
+  console.log(accessTokenInfo.id_token);
+
+  vcRequestInit.headers.append(
+    "Authorization",
+    `Bearer ${accessTokenInfo.id_token}`
+  );
   return crossFetch(requestInfo, vcRequestInit);
 }
 

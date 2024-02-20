@@ -8,7 +8,7 @@ import {
 } from "@inrupt/solid-client";
 import {getVerifiableCredentialAllFromShape} from "@inrupt/solid-client-vc";
 import { AccessGrant, deleteSolidDataset, saveSolidDatasetAt } from "@inrupt/solid-client-access-grants";
-import { createVCFetch, createVCFetchDPoP } from "./create-fetch";
+import { createVCFetch, createVCFetchDPoP, createVCFetchIdToken } from "./create-fetch";
 
 
 export async function writeTriplesWithAG(session: SolidSession, resourceUrl: URL, n3Store: N3Store, options?: {prefixes?: {}}): Promise<null | Error> {
@@ -46,9 +46,9 @@ export async function writeTriplesWithAG(session: SolidSession, resourceUrl: URL
 
         return new Promise((resolve, reject) => {
             log.debug(`First, we attempting to remove old resource (ignoring errors in case it doesn't exist yet!)...`);
-            deleteSolidDataset(resourceUrlStr, usableAccessGrant, {fetch: createVCFetch}).then(() => {
+            deleteSolidDataset(resourceUrlStr, usableAccessGrant, {fetch: createVCFetchIdToken}).then(() => {
                 saveSolidDatasetAt(resourceUrlStr, solidDataset, usableAccessGrant, {
-                    fetch: createVCFetch
+                    fetch: createVCFetchIdToken
                 }).then((response) => {
                     resolve(null);
                 }).catch((error) => {
